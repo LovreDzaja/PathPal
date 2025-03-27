@@ -241,6 +241,35 @@ export default {
         return null
       }
     },
+    locateUser() {
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const userLatLng = [latitude, longitude];
+          if (this.userMarker) {
+            this.userMarker.setLatLng(userLatLng);
+          } else {
+            this.userMarker = L.marker(userLatLng, {
+              icon: L.icon({
+                iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+              }),
+            }).addTo(this.map);
+          }
+          this.map.setView(userLatLng, 15);
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          alert('Unable to retrieve your location');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    },
     handleMapClick(e) {
       const clickedPoint = { lat: e.latlng.lat, lng: e.latlng.lng }
 
