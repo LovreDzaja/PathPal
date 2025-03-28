@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <header>
-      <h1>Forest Pathfinder</h1>
+      <h1>Welcome to PathPal</h1>
       <p>Find the safest and shortest paths through forests</p>
     </header>
     <ForestExplorer />
