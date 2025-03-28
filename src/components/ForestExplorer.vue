@@ -4,23 +4,16 @@
   <!-- Info Card -->
   <div
     v-if="info"
-    class="absolute bottom-6 left-6 bg-gradient-to-br from-green-600/50 via-green-800/50 to-green-900/50 backdrop-blur-2xl border border-green-400/30 text-white rounded-3xl p-6 shadow-4xl z-50 w-80 animate-fade-in space-y-2 transition-transform duration-500 hover:scale-105 hover:shadow-green-500/30"
+    class="absolute bottom-10 left-10 bg-gradient-to-br from-green-500/60 via-green-700/70 
+    to-green-900/80 border border-green-400/50 text-white rounded-3xl
+     p-6 z-50 w-96 animate-fade-in space-y-3 backdrop-blur-md"
   >
-    <h3 class="font-extrabold text-2xl mb-3 flex items-center gap-2">🌲 Explorer Info</h3>
-    <div class="space-y-1 text-sm leading-relaxed">
-      <p>
-        📍 <strong>Lat:</strong> {{ info.lat.toFixed(5) }}, <strong>Lng:</strong>
-        {{ info.lng.toFixed(5) }}
-      </p>
-      <p>
-        ⛰️ <strong>Elevation:</strong> {{ info.elevation }} m
-        <span class="italic">({{ info.elevationType }})</span>
-      </p>
+    <h3 class="font-extrabold text-3xl mb-4 flex items-center gap-2">🌲 Explorer Info</h3>
+    <div class="space-y-2 text-lg leading-relaxed">
+      <p>📍 <strong>Lat:</strong> {{ info.lat.toFixed(5) }}, <strong>Lng:</strong> {{ info.lng.toFixed(5) }}</p>
+      <p>⛰️ <strong>Elevation:</strong> {{ info.elevation }} m <span class="italic">({{ info.elevationType }})</span></p>
       <p>🌦️ <strong>Weather:</strong> {{ info.weather }}</p>
-      <p>
-        🔥 <strong>Difficulty:</strong>
-        <span :class="getDiffClass(info.difficulty)">{{ info.difficulty }}</span>
-      </p>
+      <p>🔥 <strong>Difficulty:</strong> <span :class="getDiffClass(info.difficulty)">{{ info.difficulty }}</span></p>
       <p>🟣 <strong>Source:</strong> {{ info.source }}</p>
     </div>
   </div>
@@ -28,11 +21,11 @@
   <!-- Elevation Graph -->
   <div
     v-if="elevationProfile.length"
-    class="absolute bottom-6 right-6 bg-gradient-to-tr from-white/10 via-white/20 to-white/10 backdrop-blur-xl rounded-3xl p-5 shadow-4xl z-50 w-64 h-28 animate-fade-in border border-white/20 transition-transform duration-500 hover:scale-105 hover:shadow-white/20"
+    class="absolute bottom-10 right-10 bg-gradient-to-tr from-white/20 via-white/30 to-white/10 backdrop-blur-3xl rounded-3xl p-6 z-50 w-80 h-36 animate-fade-in border border-white/40"
   >
-    <h4 class="font-semibold mb-2 text-white text-xs animate-pulse">📈 Elevation Profile</h4>
-    <div class="rounded-xl overflow-hidden bg-white/20 p-1 border border-white/30">
-      <canvas ref="elevationChart" class="h-20"></canvas>
+    <h4 class="font-semibold mb-2 text-white text-base animate-pulse">📈 Elevation Profile</h4>
+    <div class="rounded-xl overflow-hidden bg-white/20 p-3 border border-white/50">
+      <canvas ref="elevationChart" class="h-28"></canvas>
     </div>
   </div>
 </template>
@@ -71,6 +64,7 @@ onMounted(() => {
   map = L.map('map', {
     zoomControl: false,
     fullscreenControl: true,
+    gestureHandling: true
   }).setView([0, 0], 15)
 
   L.control.zoom({ position: 'bottomright' }).addTo(map)
@@ -107,7 +101,7 @@ onMounted(() => {
       routeWhileDragging: false,
       geocoder: L.Control.Geocoder.nominatim(),
       showAlternatives: false,
-      lineOptions: { styles: [{ color: '#00ff99', weight: 6, opacity: 0.9 }] },
+      lineOptions: { styles: [{ color: '#ff0b03', weight: 2, opacity: 0.9 }] },
       createMarker: () => null,
     }).addTo(map)
 
@@ -236,19 +230,18 @@ function drawElevationChart() {
 }
 </script>
 
+
+
 <style>
 #map {
   height: 100vh;
   width: 100vw;
   z-index: 0;
 }
-.shadow-4xl {
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
-}
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
@@ -256,6 +249,6 @@ function drawElevationChart() {
   }
 }
 .animate-fade-in {
-  animation: fade-in 0.8s ease-out;
+  animation: fade-in 1.2s ease-out;
 }
 </style>

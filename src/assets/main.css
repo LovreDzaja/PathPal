@@ -137,3 +137,74 @@ button:disabled {
   border-radius: 4px;
   margin-top: 5px;
 }
+/* Custom styling for the geocoder input boxes */
+.leaflet-routing-geocoders input {
+  background-color: #7b7b7b; /* Dark mode */
+  color: white;
+  border: 2px solid #ff5722; /* Custom border color */
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 300px; /* Default width */
+}
+
+/* Change placeholder text color */
+.leaflet-routing-geocoders input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Custom styles for dropdown results */
+.leaflet-routing-geocoders ul {
+  background-color: #333;
+  border: 1px solid #ff5722;
+  color: white;
+  width: 300px; /* Default width */
+}
+
+.leaflet-routing-geocoders li {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.leaflet-routing-geocoders li:hover {
+  background-color: #ff5722;
+  color: black;
+}
+
+/* Customize Add Waypoint button */
+.leaflet-routing-add-waypoint {
+  color: black;
+}
+
+/* Responsive design for smaller screens */
+@media screen and (max-width: 768px) {
+  .leaflet-routing-geocoders input {
+    width: 200px; /* Reduce input size */
+    font-size: 12px;
+    padding: 6px;
+  }
+
+  .leaflet-routing-geocoders ul {
+    width: 200px; /* Reduce dropdown size */
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .leaflet-routing-geocoders input {
+    width: 150px; /* Even smaller input for mobile */
+    font-size: 12px;
+    padding: 5px;
+  }
+
+  .leaflet-routing-alt  {
+    width: 150px; /* Even smaller input for mobile */
+    font-size: 12px;
+    padding: 5px;
+  }
+
+
+  .leaflet-routing-geocoders ul {
+    width: 150px; /* Reduce dropdown width */
+  }
+}
+

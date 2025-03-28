@@ -79,5 +79,4 @@ async function getOpenElevation(lat, lng) {
   }
 }
 
-// --- Start ---
 app.listen(PORT, () => console.log(`✅ Elevation API running on http://localhost:${PORT}`))
