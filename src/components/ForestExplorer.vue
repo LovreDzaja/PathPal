@@ -143,7 +143,7 @@ onMounted(() => {
       const route = routes[0]
       const distanceMeters = route.summary.totalDistance
       const walkingTime = (distanceMeters / 83.33).toFixed(2)
-
+      // Nisam siguran zasto uhvaca za samo prvi slucaj (provjereno nije radi routes[0]), mislim da je razlog zato sto se alt ruta definira prema vec odredenoj funkciji sa leaflet-a 
       setTimeout(() => {
         const resultBox = document.querySelector('.leaflet-routing-alt h3')
         if (resultBox) {
