@@ -1,39 +1,16 @@
 <template>
   <div id="map" class="w-screen h-screen animate-fade-in-map"></div>
-
-  <!-- Info Card -->
   <hr>
-  <div
-    v-if="info"
-    class="absolute bottom-10 left-10 bg-gradient-to-br from-green-500/60 via-green-700/70 
-    to-green-900/80 border border-green-400/50 text-white rounded-3xl
-     p-6 z-50 w-96 animate-fade-in space-y-3 backdrop-blur-md"
-  >
-    <h3 class="font-extrabold text-3xl mb-4 flex items-center gap-2">🌲 Explorer Info</h3>
-    <div class="space-y-2 text-lg leading-relaxed">
-      <p>📍 <strong>Lat:</strong> {{ info.lat.toFixed(5) }}, <strong>Lng:</strong> {{ info.lng.toFixed(5) }}</p>
-      <p>⛰️ <strong>Elevation:</strong> {{ info.elevation }} m <span class="italic">({{ info.elevationType }})</span></p>
-      <p>🌦️ <strong>Weather:</strong> {{ info.weather }}</p>
-      <p>🔥 <strong>Difficulty:</strong> <span :class="getDiffClass(info.difficulty)">{{ info.difficulty }}</span></p>
-      <p>🟣 <strong>Source:</strong> {{ info.source }}</p>
-    </div>
-  </div>
+  <ExplorerInfo :info="info" />
   <hr>
-
-  <!-- Elevation Graph -->
-  <div
-    v-if="elevationProfile.length"
-    class="absolute bottom-10 right-10 bg-gradient-to-tr from-white/20 via-white/30 to-white/10 backdrop-blur-3xl rounded-3xl p-6 z-50 w-80 h-36 animate-fade-in border border-white/40"
-  >
-    <h4 class="font-semibold mb-2 text-white text-base animate-pulse">📈 Elevation Profile</h4>
-    <div class="rounded-xl overflow-hidden bg-white/20 p-3 border border-white/50">
-      <canvas ref="elevationChart" class="h-28"></canvas>
-    </div>
-  </div>
+  <ElevationGraph :elevationProfile="elevationProfile" />
+  
 </template>
 
 <script setup>
 import { onMounted, ref, nextTick } from 'vue'
+import ExplorerInfo from './ExplorerInfo.vue'
+import ElevationGraph from './ElevationGraph.vue'
 import axios from 'axios'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -49,21 +26,6 @@ const info = ref(null)
 const elevationProfile = ref([])
 const elevationChart = ref(null)
 let map, userMarker, destinationMarker, routingControl, chartInstance
-
-function getDiffClass(diff) {
-  switch (diff) {
-    case 'Easy':
-      return 'text-green-300 font-bold'
-    case 'Moderate':
-      return 'text-yellow-300 font-bold'
-    case 'Hard':
-      return 'text-orange-400 font-bold'
-    case 'Extreme':
-      return 'text-red-500 font-bold animate-pulse'
-    default:
-      return ''
-  }
-}
 
 onMounted(() => {
   let routingControl = null;
@@ -143,8 +105,8 @@ onMounted(() => {
 
       // Update main route info
      
-        const mainRoute = routes[0];
-        updateRouteInfo(mainRoute.summary.totalDistance, mainRoute.summary.totalTime, 'Main Route 🗺️');
+      const mainRoute = routes[0];
+      updateRouteInfo(mainRoute.summary.totalDistance, mainRoute.summary.totalTime, 'Main Route 🗺️');
       
 
       // Handle alternative route if only one route exists
@@ -162,13 +124,12 @@ onMounted(() => {
           lineOptions: { styles: [{ color: '#0000FF', weight: 4, opacity: 0.6 }] },
           createMarker: () => null,
           router,
-        }, console.log(altWaypoint)).addTo(map);
+        }).addTo(map);
 
        
         alternativeRoutingControl.on('routesfound', async function (altEvent) {
           const altRoute = routes[0];
           updateRouteInfo(altRoute.summary.totalDistance, altRoute.summary.totalTime, 'Alternative Route 🗺️');
-          console.log('Alternative route found:', altRoute);
         });
       }
 
@@ -200,14 +161,10 @@ onMounted(() => {
         getDifficulty(elevationData.elevation, weatherData),
     };
 
-
-
-    routingControl.on('routesfound', function (e) {
+routingControl.on('routesfound', function (e) {
     const routes = e.routes;
     const mainRoute = routes[0];
     const altRoute = routes[1];
-      console.log('Main route found:', mainRoute);
-      console.log('Alternative route sumary:', altRoute.summary);
     // Update the route information using the refactored helper function
     setTimeout(() => {
       updateRouteInfo(mainRoute.summary.totalDistance, mainRoute.summary.totalTime, 'Main Route 🗺️', 0); // Update first element
@@ -241,6 +198,10 @@ onMounted(() => {
 // Helper function to update route information
 function updateRouteInfo(distanceMeters, totalTimeSeconds, label, index) {
   const walkingTimeMinutes = Math.ceil(totalTimeSeconds / 60);
+  console.log(index);
+  if(index === undefined){
+    index = 1;
+  }
 
   setTimeout(() => {
     // Select all elements with the class 'leaflet-routing-alt'
