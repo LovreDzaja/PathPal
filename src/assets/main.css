@@ -211,4 +211,5 @@ button:disabled {
 /* base.css */
 html, body {
   overflow-x: hidden;
+  overflow-y: inherit;
 }

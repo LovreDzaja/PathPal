@@ -58,7 +58,7 @@ function getDiffClass(diff) {
       return 'text-yellow-300 font-bold'
     case 'Hard':
       return 'text-orange-400 font-bold'
-    case 'Extreme':npm
+    case 'Extreme':
       return 'text-red-500 font-bold animate-pulse'
     default:
       return ''
@@ -66,23 +66,28 @@ function getDiffClass(diff) {
 }
 
 onMounted(() => {
+  let routingControl = null;
+  let alternativeRoutingControl = null;
+
   map = L.map('map', {
     zoomControl: false,
     fullscreenControl: true,
-    gestureHandling: true
-  }).setView([0, 0], 15)
+    gestureHandling: true,
+  }).setView([0, 0], 15);
 
-  L.control.zoom({ position: 'bottomright' }).addTo(map)
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
   L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
-  }).addTo(map)
+  }).addTo(map);
 
-  locateUser()
+  locateUser();
 
   map.on('click', async (e) => {
-    const { lat, lng } = e.latlng
-    if (destinationMarker) destinationMarker.remove()
+    const { lat, lng } = e.latlng;
+
+    // Remove existing destination marker
+    if (destinationMarker) destinationMarker.remove();
 
     destinationMarker = L.marker([lat, lng], {
       icon: L.icon({
@@ -93,79 +98,95 @@ onMounted(() => {
         shadowSize: [41, 41],
         shadowAnchor: [12, 41],
       }),
-    }).addTo(map)
+    }).addTo(map);
 
     const [elevationData, weatherData] = await Promise.all([
       fetchElevation(lat, lng),
       fetchWeather(lat, lng),
-    ])
+    ]);
 
-    if (!userMarker) return alert('User location not found yet!')
-    if (routingControl) map.removeControl(routingControl)
+    if (!userMarker) return alert('User location not found yet!');
 
-    // Prvi put pozivamo OSRM sa alternativnim rutama
+    // Remove existing routing controls
+    if (routingControl) {
+      map.removeControl(routingControl);
+      routingControl = null;
+    }
+    if (alternativeRoutingControl) {
+      map.removeControl(alternativeRoutingControl);
+      alternativeRoutingControl = null;
+    }
+
     const router = L.Routing.osrmv1({
       serviceUrl: 'https://router.project-osrm.org/route/v1',
       profile: 'foot',
-      alternatives: 1, // Pokušavamo dobiti barem 1 dodatnu rutu
-    })
+      polylinePrecision: 5,
+      alternatives: 1,
+    });
 
+    // Main Routing Control
     routingControl = L.Routing.control({
       waypoints: [userMarker.getLatLng(), L.latLng(lat, lng)],
       routeWhileDragging: true,
+      alternativeClassName: 'data',
+      collapseBtnClass: 'leaflet-routing-collapse-btn',
       geocoder: L.Control.Geocoder.nominatim(),
-      showAlternatives: true, 
-      altLineOptions: { styles: [{ color: '#00bfff', weight: 6, opacity: 0.7 }] }, // Stil za alternativnu rutu
-      lineOptions: { styles: [{ color: '#ff0b03', weight: 6, opacity: 0.9 }] }, // Stil za glavnu rutu
+      showAlternatives: true,
+      altLineOptions: { styles: [{ color: '#00bfff', weight: 5, opacity: 0.7 }] },
+      lineOptions: { styles: [{ color: '#ff0b03', weight: 6, opacity: 0.9 }] },
       createMarker: () => null,
       router,
-    }).addTo(map)
+    }).addTo(map);
 
     routingControl.on('routesfound', async function (e) {
-      const routes = e.routes
+      const routes = e.routes;
 
+      // Update main route info
+     
+        const mainRoute = routes[0];
+        updateRouteInfo(mainRoute.summary.totalDistance, mainRoute.summary.totalTime, 'Main Route 🗺️');
+      
+
+      // Handle alternative route if only one route exists
       if (routes.length === 1) {
-        // Ako postoji samo 1 ruta, dodajemo ručno alternativnu rutu
         const altWaypoint = L.latLng(
-          (userMarker.getLatLng().lat + lat) / 2 + 0.002, // Pomaknemo malo rutu
+          (userMarker.getLatLng().lat + lat) / 2 + 0.002,
           (userMarker.getLatLng().lng + lng) / 2 + 0.002
-        )
+        );
 
-        L.Routing.control({
+        alternativeRoutingControl = L.Routing.control({
           waypoints: [userMarker.getLatLng(), altWaypoint, L.latLng(lat, lng)],
           routeWhileDragging: true,
-          lineOptions: { styles: [{ color: '#0000FF', weight: 4, opacity: 0.6 }] }, // Plava ruta za alternativu
+          alternativeClassName: 'data',
+          collapseBtnClass: 'leaflet-routing-collapse-btn',
+          lineOptions: { styles: [{ color: '#0000FF', weight: 4, opacity: 0.6 }] },
           createMarker: () => null,
           router,
-        }).addTo(map)
+        }, console.log(altWaypoint)).addTo(map);
+
+       
+        alternativeRoutingControl.on('routesfound', async function (altEvent) {
+          const altRoute = routes[0];
+          updateRouteInfo(altRoute.summary.totalDistance, altRoute.summary.totalTime, 'Alternative Route 🗺️');
+          console.log('Alternative route found:', altRoute);
+        });
       }
 
-      const route = routes[0]
-      const distanceMeters = route.summary.totalDistance
-      const walkingTime = (distanceMeters / 83.33).toFixed(2)
-
-      setTimeout(() => {
-        const resultBox = document.querySelector('.leaflet-routing-alt h3')
-        if (resultBox) {
-          resultBox.innerText = `Route Info 🗺️ ${(distanceMeters / 1000).toFixed(2)} km ,🚶 ${(walkingTime / 1).toFixed()} min`
-        } else {
-          console.warn("Could not find .leaflet-routing-alt h3. Check if it exists.")
-        }
-      }, 1)
-
-      const coordinates = route.coordinates
+      // Fetch elevation data for the main route
+      const coordinates = mainRoute.coordinates;
       const samples = await Promise.all(
         coordinates.filter((_, i) => i % 10 === 0).map((pt) => fetchElevation(pt.lat, pt.lng))
-      )
+      );
 
       elevationProfile.value = samples.map((s, i) => ({
-        distance: (i * route.summary.totalDistance) / (samples.length - 1) / 1000,
+        distance:
+          ((i * mainRoute.summary.totalDistance) / (samples.length - 1)) / 1000,
         elevation: s.elevation,
-      }))
+      }));
 
-      await nextTick()
-      drawElevationChart()
-    })
+      await nextTick();
+      drawElevationChart();
+    });
 
     info.value = {
       lat,
@@ -173,13 +194,81 @@ onMounted(() => {
       elevation: elevationData.elevation,
       source: elevationData.source,
       elevationType: getElevationType(elevationData.elevation),
-      weather: `${weatherData.temperature}°C, ${weatherData.condition}`,
-      difficulty: getDifficulty(elevationData.elevation, weatherData),
+      weather:
+        `${weatherData.temperature}°C, ${weatherData.condition}`,
+      difficulty:
+        getDifficulty(elevationData.elevation, weatherData),
+    };
+
+
+
+    routingControl.on('routesfound', function (e) {
+    const routes = e.routes;
+    const mainRoute = routes[0];
+    const altRoute = routes[1];
+      console.log('Main route found:', mainRoute);
+      console.log('Alternative route sumary:', altRoute.summary);
+    // Update the route information using the refactored helper function
+    setTimeout(() => {
+      updateRouteInfo(mainRoute.summary.totalDistance, mainRoute.summary.totalTime, 'Main Route 🗺️', 0); // Update first element
+    }, 100);
+
+    setTimeout(() => {
+      updateRouteInfo(altRoute.summary.totalDistance, altRoute.summary.totalTime, 'Alternative Route 🗺️', 1); // Update second element
+    }, 100);
+
+    
+    const plan = routingControl.getPlan();
+    if (plan && plan._routes) {
+      plan._routes.forEach(function(route) {
+        const routeContainer = route._container;  // Get the route's container
+
+        if (routeContainer) {
+          // Safely modify the content inside the route container
+          const iconElement = routeContainer.querySelector('.leaflet-routing-icon');
+          if (iconElement) {
+            iconElement.innerHTML = 'Custom Text';  // Change the inner HTML as needed
+          }
+        } else {
+          console.error('Route container not found:', route);
+        }
+      });
+    } else {
+      console.error('Routing control plan or routes are not available yet');
     }
-  })
-})
+});
+
+// Helper function to update route information
+function updateRouteInfo(distanceMeters, totalTimeSeconds, label, index) {
+  const walkingTimeMinutes = Math.ceil(totalTimeSeconds / 60);
+
+  setTimeout(() => {
+    // Select all elements with the class 'leaflet-routing-alt'
+    const infoElements = document.querySelectorAll('.leaflet-routing-alt');
+
+    // Ensure the index is within bounds
+    if (index >= infoElements.length) {
+      console.error(`Element at index ${index} does not exist.`);
+      return;
+    }
+
+    // Select the specific element based on the index
+    const infoBox = infoElements[index].getElementsByTagName('h3').item(0);
+
+    if (infoBox) {
+      // Update the content of the selected infoBox
+      infoBox.innerHTML = `
+        <span>${label}: ${(distanceMeters / 1000).toFixed(2)} km , 🚶 ${(walkingTimeMinutes * 2.8).toFixed(1)} min</span>
+      `;
+    } else {
+      console.error('No <h3> element found in the selected container.');
+    }
+  }, 1000);
+}
 
 
+});
+});
 
 function locateUser() {
   if (!navigator.geolocation) return alert('Geolocation is not supported by your browser')
