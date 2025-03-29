@@ -6,14 +6,11 @@ import axios from 'axios'
 const app = express()
 const PORT = process.env.PORT || 3001
 
-// --- Cache ---
 const elevationCache = new Map()
 
-// --- Middleware ---
 app.use(cors())
 app.use(express.json())
 
-// --- API ---
 app.get('/api/elevation', async (req, res) => {
   const { lat, lng } = req.query
   const latNum = parseFloat(lat)
@@ -36,21 +33,18 @@ app.get('/api/elevation', async (req, res) => {
   }
 
   try {
-    // Try OpenTopoData
     const topo = await getOpenTopoData(latNum, lngNum)
     if (topo !== null) {
       elevationCache.set(cacheKey, topo)
       return res.json({ elevation: topo, source: 'OpenTopoData' })
     }
 
-    // Fallback Open-Elevation
     const openElev = await getOpenElevation(latNum, lngNum)
     if (openElev !== null) {
       elevationCache.set(cacheKey, openElev)
       return res.json({ elevation: openElev, source: 'Open-Elevation' })
     }
 
-    // If all fail
     return res.json({ elevation: 0, source: 'fallback' })
   } catch (err) {
     console.error('Server Error:', err.message)
@@ -58,7 +52,6 @@ app.get('/api/elevation', async (req, res) => {
   }
 })
 
-// --- Services ---
 async function getOpenTopoData(lat, lng) {
   try {
     const res = await axios.get(`https://api.opentopodata.org/v1/aster30m?locations=${lat},${lng}`)

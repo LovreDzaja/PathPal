@@ -208,3 +208,7 @@ button:disabled {
   }
 }
 
+/* base.css */
+html, body {
+  overflow-x: hidden;
+}

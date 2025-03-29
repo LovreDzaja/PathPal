@@ -1,7 +1,8 @@
 <template>
-  <div id="map" class="w-screen h-screen"></div>
+  <div id="map" class="w-screen h-screen animate-fade-in-map"></div>
 
   <!-- Info Card -->
+  <hr>
   <div
     v-if="info"
     class="absolute bottom-10 left-10 bg-gradient-to-br from-green-500/60 via-green-700/70 
@@ -17,6 +18,7 @@
       <p>🟣 <strong>Source:</strong> {{ info.source }}</p>
     </div>
   </div>
+  <hr>
 
   <!-- Elevation Graph -->
   <div
@@ -31,13 +33,16 @@
 </template>
 
 <script setup>
-import { onMounted, ref, nextTick, computed } from 'vue'
+import { onMounted, ref, nextTick } from 'vue'
 import axios from 'axios'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet-routing-machine'
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'
 import 'leaflet-control-geocoder'
+import 'leaflet-routing-machine'
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'
+
 import Chart from 'chart.js/auto'
 
 const info = ref(null)
@@ -53,7 +58,7 @@ function getDiffClass(diff) {
       return 'text-yellow-300 font-bold'
     case 'Hard':
       return 'text-orange-400 font-bold'
-    case 'Extreme':
+    case 'Extreme':npm
       return 'text-red-500 font-bold animate-pulse'
     default:
       return ''
@@ -72,11 +77,13 @@ onMounted(() => {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors',
   }).addTo(map)
+
   locateUser()
 
   map.on('click', async (e) => {
     const { lat, lng } = e.latlng
     if (destinationMarker) destinationMarker.remove()
+
     destinationMarker = L.marker([lat, lng], {
       icon: L.icon({
         iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
@@ -96,25 +103,66 @@ onMounted(() => {
     if (!userMarker) return alert('User location not found yet!')
     if (routingControl) map.removeControl(routingControl)
 
+    // Prvi put pozivamo OSRM sa alternativnim rutama
+    const router = L.Routing.osrmv1({
+      serviceUrl: 'https://router.project-osrm.org/route/v1',
+      profile: 'foot',
+      alternatives: 1, // Pokušavamo dobiti barem 1 dodatnu rutu
+    })
+
     routingControl = L.Routing.control({
       waypoints: [userMarker.getLatLng(), L.latLng(lat, lng)],
-      routeWhileDragging: false,
+      routeWhileDragging: true,
       geocoder: L.Control.Geocoder.nominatim(),
-      showAlternatives: false,
-      lineOptions: { styles: [{ color: '#ff0b03', weight: 2, opacity: 0.9 }] },
+      showAlternatives: true, 
+      altLineOptions: { styles: [{ color: '#00bfff', weight: 6, opacity: 0.7 }] }, // Stil za alternativnu rutu
+      lineOptions: { styles: [{ color: '#ff0b03', weight: 6, opacity: 0.9 }] }, // Stil za glavnu rutu
       createMarker: () => null,
+      router,
     }).addTo(map)
 
     routingControl.on('routesfound', async function (e) {
-      const route = e.routes[0]
+      const routes = e.routes
+
+      if (routes.length === 1) {
+        // Ako postoji samo 1 ruta, dodajemo ručno alternativnu rutu
+        const altWaypoint = L.latLng(
+          (userMarker.getLatLng().lat + lat) / 2 + 0.002, // Pomaknemo malo rutu
+          (userMarker.getLatLng().lng + lng) / 2 + 0.002
+        )
+
+        L.Routing.control({
+          waypoints: [userMarker.getLatLng(), altWaypoint, L.latLng(lat, lng)],
+          routeWhileDragging: true,
+          lineOptions: { styles: [{ color: '#0000FF', weight: 4, opacity: 0.6 }] }, // Plava ruta za alternativu
+          createMarker: () => null,
+          router,
+        }).addTo(map)
+      }
+
+      const route = routes[0]
+      const distanceMeters = route.summary.totalDistance
+      const walkingTime = (distanceMeters / 83.33).toFixed(2)
+
+      setTimeout(() => {
+        const resultBox = document.querySelector('.leaflet-routing-alt h3')
+        if (resultBox) {
+          resultBox.innerText = `Route Info 🗺️ ${(distanceMeters / 1000).toFixed(2)} km ,🚶 ${(walkingTime / 1).toFixed()} min`
+        } else {
+          console.warn("Could not find .leaflet-routing-alt h3. Check if it exists.")
+        }
+      }, 1)
+
       const coordinates = route.coordinates
       const samples = await Promise.all(
-        coordinates.filter((_, i) => i % 10 === 0).map((pt) => fetchElevation(pt.lat, pt.lng)),
+        coordinates.filter((_, i) => i % 10 === 0).map((pt) => fetchElevation(pt.lat, pt.lng))
       )
+
       elevationProfile.value = samples.map((s, i) => ({
         distance: (i * route.summary.totalDistance) / (samples.length - 1) / 1000,
         elevation: s.elevation,
       }))
+
       await nextTick()
       drawElevationChart()
     })
@@ -130,6 +178,8 @@ onMounted(() => {
     }
   })
 })
+
+
 
 function locateUser() {
   if (!navigator.geolocation) return alert('Geolocation is not supported by your browser')
@@ -230,8 +280,6 @@ function drawElevationChart() {
 }
 </script>
 
-
-
 <style>
 #map {
   height: 100vh;
@@ -251,4 +299,17 @@ function drawElevationChart() {
 .animate-fade-in {
   animation: fade-in 1.2s ease-out;
 }
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in-map {
+  animation: fade-in 2.6s ease-out;
+}
+
 </style>
