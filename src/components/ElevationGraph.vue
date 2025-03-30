@@ -1,49 +1,57 @@
-
 <template>
+  <div class="chart-container">
     <canvas ref="elevationChart"></canvas>
-  </template>
-  
+  </div>
+</template>
+
 <script setup>
 import { defineProps, ref, watch, nextTick, onMounted } from 'vue';
 import Chart from 'chart.js/auto';
-import axios from 'axios';
 
 const props = defineProps({ elevationProfile: Array });
-const elevationProfile = ref([]);
 const elevationChart = ref(null);
 let chartInstance = null;
+let previousProfile = null;
 
-const [elevationData] = await Promise.all([
-      fetchElevation(lat, lng),
-]);
-
+// Ensure the chart only updates when new data is available
 watch(
   () => props.elevationProfile,
   async (newProfile) => {
-    if (newProfile && newProfile.length) {
-      elevationProfile.value = newProfile;
-      await nextTick();
-      drawElevationChart();
-    }
+    if (!newProfile || newProfile.length === 0) return;
+
+    // Prevent unnecessary redraws
+    if (JSON.stringify(previousProfile) === JSON.stringify(newProfile)) return;
+    
+    previousProfile = JSON.parse(JSON.stringify(newProfile)); // Store current data
+    await nextTick();
+    drawElevationChart(newProfile);
   },
   { deep: true }
 );
 
-async function fetchElevation(lat, lng) {
-  const { data } = await axios.get(`http://localhost:3001/api/elevation?lat=${lat}&lng=${lng}`);
-  return data;
-}
+onMounted(() => {
+  if (props.elevationProfile?.length) {
+    drawElevationChart(props.elevationProfile);
+  }
+});
 
-function drawElevationChart() {
-  if (chartInstance) chartInstance.destroy();
+function drawElevationChart(profile) {
+  if (!elevationChart.value) return;
+
+  // Destroy existing chart to avoid duplication
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+
   chartInstance = new Chart(elevationChart.value.getContext('2d'), {
     type: 'line',
     data: {
-      labels: elevationProfile.value.map((p) => p.distance.toFixed(2) + ' km'),
+      labels: profile.map((p) => `${p.distance.toFixed(2)} km`),
       datasets: [
         {
           label: 'Elevation (m)',
-          data: elevationProfile.value.map((p) => p.elevation),
+          data: profile.map((p) => p.elevation),
           fill: true,
           backgroundColor: 'rgba(34,197,94,0.2)',
           borderColor: '#22c55e',
@@ -53,11 +61,29 @@ function drawElevationChart() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
-        x: { title: { display: true, text: 'Distance' } },
-        y: { title: { display: true, text: 'Elevation (m)' } },
+        x: {
+          title: { display: true, text: 'Distance (km)' },
+        },
+        y: {
+          title: { display: true, text: 'Elevation (m)' },
+        },
       },
     },
   });
 }
 </script>
+
+<style scoped>
+.chart-container {
+  width: 100%;
+  max-width: 600px;
+  margin: auto;
+}
+canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+</style>

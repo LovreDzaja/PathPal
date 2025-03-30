@@ -20,11 +20,8 @@ import 'leaflet-control-geocoder'
 import 'leaflet-routing-machine'
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'
 
-import Chart from 'chart.js/auto'
-
 const info = ref(null)
 const elevationProfile = ref([])
-const elevationChart = ref(null)
 let map, userMarker, destinationMarker, routingControl, chartInstance
 
 onMounted(() => {
@@ -87,11 +84,10 @@ onMounted(() => {
     });
 
     // Main Routing Control
+// Create Routing Control
     routingControl = L.Routing.control({
       waypoints: [userMarker.getLatLng(), L.latLng(lat, lng)],
       routeWhileDragging: true,
-      alternativeClassName: 'data',
-      collapseBtnClass: 'leaflet-routing-collapse-btn',
       geocoder: L.Control.Geocoder.nominatim(),
       showAlternatives: true,
       altLineOptions: { styles: [{ color: '#00bfff', weight: 5, opacity: 0.7 }] },
@@ -99,6 +95,10 @@ onMounted(() => {
       createMarker: () => null,
       router,
     }).addTo(map);
+
+    // Create a Leaflet Control for the Collapse Button
+
+
 
     routingControl.on('routesfound', async function (e) {
       const routes = e.routes;
@@ -108,7 +108,6 @@ onMounted(() => {
       const mainRoute = routes[0];
       updateRouteInfo(mainRoute.summary.totalDistance, mainRoute.summary.totalTime, 'Main Route 🗺️');
       
-
       // Handle alternative route if only one route exists
       if (routes.length === 1) {
         const altWaypoint = L.latLng(
@@ -124,7 +123,7 @@ onMounted(() => {
           lineOptions: { styles: [{ color: '#0000FF', weight: 4, opacity: 0.6 }] },
           createMarker: () => null,
           router,
-        }).addTo(map);
+        }, console.log(altWaypoint)).addTo(map);
 
        
         alternativeRoutingControl.on('routesfound', async function (altEvent) {
@@ -160,12 +159,70 @@ onMounted(() => {
       difficulty:
         getDifficulty(elevationData.elevation, weatherData),
     };
+// Limit the buttons to only two
+ // Limit the buttons to only two
+let buttonCount = 0;
+
+// Create the CollapseRouting control
+L.Control.CollapseRouting = L.Control.extend({
+  onAdd: function () {
+    // Prevent creation of more than two buttons
+    if (buttonCount >= 2) {
+      return; // Do not add more buttons if we've already added two
+    }
+
+    let button = L.DomUtil.create("button", "leaflet-bar leaflet-control leaflet-control-custom");
+    button.innerText = "☰"; // Hamburger Menu Icon
+    button.style.backgroundColor = "black";
+    button.style.border = "2px solid black";
+    button.style.cursor = "pointer";
+
+    // Increment the button count
+    buttonCount++;
+
+    // Prevent click event from propagating to the map
+    L.DomEvent.on(button, 'mousedown dblclick click', L.DomEvent.stopPropagation);
+    L.DomEvent.on(button, 'click', function () {
+      let containers = document.querySelectorAll(".leaflet-routing-container");
+
+      // Log all containers for reference
+      console.log(containers);
+
+      containers.forEach((container, index) => {
+        if (container) {
+          // Toggle visibility for the first 2 containers only
+          if (index === 0 || index === 1) {
+            container.style.display = container.style.display === "none" ? "block" : "none";
+          }
+        }
+      });
+    });
+
+    return button;
+  },
+});
+
+// Function to add collapse control, limiting to 2 buttons
+function addCollapseButton() {
+  // Check if there are already 2 buttons, if so, don't add more
+  const existingButtons = document.querySelectorAll('.leaflet-control-custom');
+  if (existingButtons.length >= 1) {
+    return; // Don't add more buttons
+  }
+
+  // Add the collapse button control to the map
+  map.addControl(new L.Control.CollapseRouting({ position: "topright" }));
+}
+
+// Call this function when needed to add the button
+addCollapseButton(); // Limit button creation to 2
+
 
 routingControl.on('routesfound', function (e) {
     const routes = e.routes;
     const mainRoute = routes[0];
     const altRoute = routes[1];
-    // Update the route information using the refactored helper function
+      // Update the route information using the refactored helper function
     setTimeout(() => {
       updateRouteInfo(mainRoute.summary.totalDistance, mainRoute.summary.totalTime, 'Main Route 🗺️', 0); // Update first element
     }, 100);
@@ -173,7 +230,6 @@ routingControl.on('routesfound', function (e) {
     setTimeout(() => {
       updateRouteInfo(altRoute.summary.totalDistance, altRoute.summary.totalTime, 'Alternative Route 🗺️', 1); // Update second element
     }, 100);
-
     
     const plan = routingControl.getPlan();
     if (plan && plan._routes) {
@@ -198,7 +254,6 @@ routingControl.on('routesfound', function (e) {
 // Helper function to update route information
 function updateRouteInfo(distanceMeters, totalTimeSeconds, label, index) {
   const walkingTimeMinutes = Math.ceil(totalTimeSeconds / 60);
-  console.log(index);
   if(index === undefined){
     index = 1;
   }
@@ -302,64 +357,4 @@ function getDifficulty(elevation, weather) {
   return ['Easy', 'Moderate', 'Hard', 'Extreme'][Math.min(total - 1, 3)]
 }
 
-function drawElevationChart() {
-  if (chartInstance) chartInstance.destroy()
-  chartInstance = new Chart(elevationChart.value.getContext('2d'), {
-    type: 'line',
-    data: {
-      labels: elevationProfile.value.map((p) => p.distance.toFixed(2) + ' km'),
-      datasets: [
-        {
-          label: 'Elevation (m)',
-          data: elevationProfile.value.map((p) => p.elevation),
-          fill: true,
-          backgroundColor: 'rgba(34,197,94,0.2)',
-          borderColor: '#22c55e',
-          tension: 0.4,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: { title: { display: true, text: 'Distance' } },
-        y: { title: { display: true, text: 'Elevation (m)' } },
-      },
-    },
-  })
-}
 </script>
-
-<style>
-#map {
-  height: 100vh;
-  width: 100vw;
-  z-index: 0;
-}
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.animate-fade-in {
-  animation: fade-in 1.2s ease-out;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-.animate-fade-in-map {
-  animation: fade-in 2.6s ease-out;
-}
-
-</style>

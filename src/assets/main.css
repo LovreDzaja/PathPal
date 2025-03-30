@@ -213,3 +213,34 @@ html, body {
   overflow-x: hidden;
   overflow-y: inherit;
 }
+
+#map {
+  height: 100vh;
+  width: 100vw;
+  z-index: 0;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fade-in 1.2s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in-map {
+  animation: fade-in 2.6s ease-out;
+}
