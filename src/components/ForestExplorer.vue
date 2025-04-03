@@ -316,10 +316,10 @@ function locateUser() {
 }
 
 async function fetchElevation(lat, lng) {
-  const apiUrl = process.env.VUE_APP_API_URL;
-  const { data } = await axios.get(`${}?lat=${lat}&lng=${lng}`)
-  return data
+  const { data } = await axios.get(`/api/elevation?lat=${lat}&lng=${lng}`);
+  return data;
 }
+
 
 async function fetchWeather(lat, lng) {
   const { data } = await axios.get(
