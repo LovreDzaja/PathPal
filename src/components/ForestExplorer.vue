@@ -316,7 +316,8 @@ function locateUser() {
 }
 
 async function fetchElevation(lat, lng) {
-  const { data } = await axios.get(`http://localhost:3001/api/elevation?lat=${lat}&lng=${lng}`)
+  const apiUrl = process.env.VUE_APP_API_URL;
+  const { data } = await axios.get(`${}?lat=${lat}&lng=${lng}`)
   return data
 }
 
