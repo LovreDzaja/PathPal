@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { defineProps, ref, watch, nextTick, onMounted } from 'vue';
+import { ref, watch, nextTick, onMounted } from 'vue';
 import Chart from 'chart.js/auto';
 
 const props = defineProps({ elevationProfile: Array });

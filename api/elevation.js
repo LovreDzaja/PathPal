@@ -1,16 +1,8 @@
-import express from 'express'
-import cors from 'cors'
 import axios from 'axios'
-
-const app = express()
-const PORT = process.env.PORT || 3001
 
 const elevationCache = new Map()
 
-app.use(cors())
-app.use(express.json())
-
-app.get('/api/elevation', async (req, res) => {
+export default async function handler(req, res) {
   const { lat, lng } = req.query
   const latNum = parseFloat(lat)
   const lngNum = parseFloat(lng)
@@ -46,10 +38,10 @@ app.get('/api/elevation', async (req, res) => {
 
     return res.json({ elevation: 0, source: 'fallback' })
   } catch (err) {
-    console.error('Server Error:', err.message)
+    console.error('API Error:', err.message)
     res.status(500).json({ error: 'Server error', details: err.message })
   }
-})
+}
 
 async function getOpenTopoData(lat, lng) {
   try {
@@ -70,5 +62,3 @@ async function getOpenElevation(lat, lng) {
     return null
   }
 }
-
-app.listen(PORT, () => console.log(`✅ Elevation API running on http://localhost:${PORT}`))

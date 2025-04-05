@@ -308,7 +308,7 @@ function locateUser() {
 }
 
 async function fetchElevation(lat, lng) {
-  const { data } = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/elevation?lat=${lat}&lng=${lng}`);
+  const { data } = await axios.get(`/api/elevation`, {params: {lat, lng}});
   return data;
 }
 
