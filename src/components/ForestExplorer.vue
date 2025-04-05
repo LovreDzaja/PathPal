@@ -17,12 +17,10 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet-routing-machine'
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'
 import 'leaflet-control-geocoder'
-import 'leaflet-routing-machine'
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'
 
 const info = ref(null)
 const elevationProfile = ref([])
-let map, userMarker, destinationMarker, routingControl, chartInstance
+let map, userMarker, destinationMarker;
 
 onMounted(() => {
   let routingControl = null;
@@ -84,7 +82,7 @@ onMounted(() => {
     });
 
     // Main Routing Control
-// Create Routing Control
+    // Create Routing Control
     routingControl = L.Routing.control({
       waypoints: [userMarker.getLatLng(), L.latLng(lat, lng)],
       routeWhileDragging: true,
@@ -97,8 +95,6 @@ onMounted(() => {
     }).addTo(map);
 
     // Create a Leaflet Control for the Collapse Button
-
-
 
     routingControl.on('routesfound', async function (e) {
       const routes = e.routes;
@@ -145,7 +141,6 @@ onMounted(() => {
       }));
 
       await nextTick();
-      drawElevationChart();
     });
 
     info.value = {
@@ -217,12 +212,11 @@ function addCollapseButton() {
 // Call this function when needed to add the button
 addCollapseButton(); // Limit button creation to 2
 
-
 routingControl.on('routesfound', function (e) {
     const routes = e.routes;
     const mainRoute = routes[0];
     const altRoute = routes[1];
-      // Update the route information using the refactored helper function
+      // Update the route informationusing the refactored helper function
     setTimeout(() => {
       updateRouteInfo(mainRoute.summary.totalDistance, mainRoute.summary.totalTime, 'Main Route 🗺️', 0); // Update first element
     }, 100);
@@ -259,31 +253,29 @@ function updateRouteInfo(distanceMeters, totalTimeSeconds, label, index) {
   }
 
   setTimeout(() => {
-    // Select all elements with the class 'leaflet-routing-alt'
-    const infoElements = document.querySelectorAll('.leaflet-routing-alt');
+      // Select all elements with the class 'leaflet-routing-alt'
+      const infoElements = document.querySelectorAll('.leaflet-routing-alt');
 
-    // Ensure the index is within bounds
-    if (index >= infoElements.length) {
-      console.error(`Element at index ${index} does not exist.`);
-      return;
-    }
+      // Ensure the index is within bounds
+      if (index >= infoElements.length) {
+        console.error(`Element at index ${index} does not exist.`);
+        return;
+      }
 
-    // Select the specific element based on the index
-    const infoBox = infoElements[index].getElementsByTagName('h3').item(0);
+      // Select the specific element based on the index
+      const infoBox = infoElements[index].getElementsByTagName('h3').item(0);
 
-    if (infoBox) {
-      // Update the content of the selected infoBox
-      infoBox.innerHTML = `
-        <span>${label}: ${(distanceMeters / 1000).toFixed(2)} km , 🚶 ${(walkingTimeMinutes * 2.8).toFixed(1)} min</span>
-      `;
-    } else {
-      console.error('No <h3> element found in the selected container.');
-    }
-  }, 1000);
-}
-
-
-});
+      if (infoBox) {
+        // Update the content of the selected infoBox
+        infoBox.innerHTML = `
+          <span>${label}: ${(distanceMeters / 1000).toFixed(2)} km , 🚶 ${(walkingTimeMinutes * 2.8).toFixed(1)} min</span>
+        `;
+      } else {
+        console.error('No <h3> element found in the selected container.');
+      }
+    }, 1000);
+  }
+  });
 });
 
 function locateUser() {
@@ -316,10 +308,9 @@ function locateUser() {
 }
 
 async function fetchElevation(lat, lng) {
-  const { data } = await axios.get(`/api/elevation?lat=${lat}&lng=${lng}`);
+  const { data } = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/elevation?lat=${lat}&lng=${lng}`);
   return data;
 }
-
 
 async function fetchWeather(lat, lng) {
   const { data } = await axios.get(
